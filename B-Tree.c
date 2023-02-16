@@ -486,7 +486,9 @@ btNode *rotateLeft(btNode *root, int i)
 				*(root->vArray + j) = NULL;
 				root->vArray = shrinkNodeArray(root->vArray, --root->vIndex);
 				(*(root->vArray + root->vIndex))->left = btTemp;
-				(*(root->vArray + root->vIndex))->middleLR-=1;
+				if((*(root->vArray + root->vIndex))->middleLR == 1 || (*(root->vArray + root->vIndex))->middleLR == 3) {
+				  (*(root->vArray + root->vIndex))->middleLR-=1;
+				}
 				(*(root->vArray + root->vIndex))->lHeight = (*((*(root->vArray + root->vIndex))->left->vArray + 0))->lHeight + 1;
 				(*(root->vArray + root->vIndex))->rHeight = (*((*(root->vArray + root->vIndex))->right->vArray + 0))->rHeight + 1;
 			}
@@ -517,15 +519,8 @@ btNode *deleteBtNode(btNode *root, int value)
 					else
 					{
 						(*(root->vArray + i))->lHeight = (*(((*(root->vArray + i))->left)->vArray + 0))->lHeight + 1;
-						if ((*(root->vArray + i))->lHeight < (*(root->vArray + i))->rHeight)
-						{
-							if (i > 0)
-							{
-							}
-							else
-							{
-								return rotateLeft(root, i);
-							}
+						if ((*(root->vArray + i))->lHeight < (*(root->vArray + i))->rHeight) {
+						  return rotateLeft(root, i);
 						}
 					}
 				}
@@ -559,15 +554,8 @@ btNode *deleteBtNode(btNode *root, int value)
 					else
 					{
 						(*(root->vArray + i))->rHeight = (*(((*(root->vArray + i))->right)->vArray + 0))->rHeight + 1;
-						if ((*(root->vArray + i))->rHeight < (*(root->vArray + i))->lHeight)
-						{
-							if (i > 0)
-							{
-							}
-							else
-							{
-								return rotateRight(root, i);
-							}
+						if ((*(root->vArray + i))->rHeight < (*(root->vArray + i))->lHeight) {	
+						  return rotateRight(root, i);
 						}
 						break;
 					}
