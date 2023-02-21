@@ -324,8 +324,19 @@ btNode *rotateRight(btNode *root, int i)
 		*(btTemp2->vArray + btTemp2->vIndex) = *(btTemp->vArray + btTemp->vIndex);
 		*(btTemp->vArray + btTemp->vIndex) = NULL;
 		btTemp->vArray = shrinkNodeArray(btTemp->vArray, --btTemp->vIndex);
+		if((*(btTemp->vArray + btTemp->vIndex))->middleLR == 2 || (*(btTemp->vArray + btTemp->vIndex))->middleLR == 3) {
+		  (*(btTemp->vArray + btTemp->vIndex))->middleLR-=2;
+		}
+		if((*(btTemp2->vArray + btTemp2->vIndex))->left != NULL) {
+
+
+		}
 		(*(btTemp2->vArray + btTemp2->vIndex))->left = btTemp;
 		(*(btTemp2->vArray + btTemp2->vIndex))->lHeight = (*(btTemp->vArray + btTemp->vIndex))->lHeight + 1;
+		if((*(btTemp2->vArray + btTemp2->vIndex))->right != NULL) {
+		  (*(root->vArray + root->vIndex))->left = (*(btTemp2->vArray + btTemp2->vIndex))->right;
+		  (*(root->vArray + root->vIndex))->lHeight = (*((*(btTemp2->vArray + btTemp2->vIndex))->right->vArray + 0))->lHeight + 1;
+		}
 		(*(btTemp2->vArray + btTemp2->vIndex))->right = root;
 		(*(btTemp2->vArray + btTemp2->vIndex))->rHeight = (*(root->vArray + root->vIndex))->rHeight + 1;
 		return btTemp2;
@@ -481,6 +492,7 @@ btNode *rotateLeft(btNode *root, int i)
 			{
 				btTemp = (*(root->vArray + (i - 1)))->left;
 				(*(root->vArray + (i - 1)))->left = NULL;
+				(*(root->vArray + (i - 1)))->lHeight = 0;
 				btTemp->vArray = growNodeArray(btTemp->vArray, ++btTemp->vIndex);
 				*(btTemp->vArray + btTemp->vIndex) = *(root->vArray + (i - 1));
 				
@@ -529,6 +541,12 @@ btNode *deleteBtNode(btNode *root, int value)
 					if ((*(root->vArray + i))->left == NULL)
 					{
 						(*(root->vArray + i))->lHeight = 0;
+						if(root->vIndex > 0) {
+						  (*(root->vArray + (i-1)))->right = NULL;
+						  (*(root->vArray + (i-1)))->rHeight = 0;
+						  if((*(root->vArray + (i-1)))->middleLR == 2 || (*(root->vArray + (i-1)))->middleLR == 3)
+						    (*(root->vArray + (i-1)))->middleLR-=2;
+						}
 						return rotateLeft(root, i);
 					}
 					else
@@ -564,6 +582,12 @@ btNode *deleteBtNode(btNode *root, int value)
 					if ((*(root->vArray + i))->right == NULL)
 					{
 						(*(root->vArray + i))->rHeight = 0;
+						if(root->vIndex > 0) {
+						  (*(root->vArray + (i+1)))->left = NULL;
+						  (*(root->vArray + (i+1)))->lHeight = 0;
+						  if((*(root->vArray + (i+1)))->middleLR == 1 || (*(root->vArray + (i+1)))->middleLR == 3)
+						    (*(root->vArray + (i+1)))->middleLR-=1;
+						}
 						return rotateRight(root, i);
 					}
 					else
