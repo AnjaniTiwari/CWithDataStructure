@@ -1,3 +1,7 @@
+// program create a b-tree (balancing tree)
+//Date 19-Dec-2022
+//23-January-2023(insertion complited with my logic)
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -57,13 +61,12 @@ btNode* createBtNode(void)
 	return root;
 }
 
-node** growNodeArray(node **vArray, int size) {
-	vArray = (node**)realloc(vArray, (size + 1) * sizeof(node *));
-	if (!vArray)
+void growNodeArray(node*** vArray, int size) {
+	*vArray = (node**)realloc((*vArray), (size + 1) * sizeof(node *));
+	if (!(*vArray))
 		printf("Node pointer memory not allocated.\n");
 	else
-		vArray[size] = NULL;
-	return vArray;
+		(*vArray)[size] = NULL;
 }
 
 void splitNodes(btNode **root)
@@ -82,7 +85,7 @@ void splitNodes(btNode **root)
 		//left
 		btTemp1 = createBtNode();
 		btTemp1->vIndex = sIndex - 1;
-		btTemp1->vArray = growNodeArray(btTemp1->vArray, btTemp1->vIndex);
+    	growNodeArray(&btTemp1->vArray, btTemp1->vIndex);
 		for (i = 0; i <= btTemp1->vIndex; i++)
 		{
 			*(btTemp1->vArray + i) = *(((*root)->vArray) + i);
@@ -115,7 +118,7 @@ void splitNodes(btNode **root)
 		//right
 		btTemp1 = createBtNode();
 		btTemp1->vIndex = (*root)->vIndex - (sIndex + 1);
-		btTemp1->vArray = growNodeArray(btTemp1->vArray, btTemp1->vIndex);
+		growNodeArray(&btTemp1->vArray, btTemp1->vIndex);
 		for (i = 0; i <= btTemp1->vIndex; i++)
 		{
 			*(btTemp1->vArray + i) = *((*root)->vArray + (sIndex + (i + 1)));
@@ -161,7 +164,7 @@ btNode *insertBtNode(btNode *root, int data)
 	if (root == NULL)
 	{
 		root = createBtNode();
-		root->vArray = growNodeArray(root->vArray, ++root->vIndex);
+		growNodeArray(&root->vArray, ++root->vIndex);
 		*(root->vArray + root->vIndex) = createNode(data);
 	}
 	else
@@ -176,7 +179,7 @@ btNode *insertBtNode(btNode *root, int data)
 		{
 			if ((*(root->vArray + i))->left == NULL)
 			{
-				root->vArray = growNodeArray(root->vArray, ++root->vIndex);
+				growNodeArray(&root->vArray, ++root->vIndex);
 				for (j = root->vIndex; j > i; j--)
 				{
 					*(root->vArray + j) = *(root->vArray + (j - 1));
@@ -188,7 +191,7 @@ btNode *insertBtNode(btNode *root, int data)
 				temp = insertBtNode((*(root->vArray + i))->left, data);
 				if (temp->split == 1)
 				{
-					root->vArray = growNodeArray(root->vArray, ++root->vIndex);
+					growNodeArray(&root->vArray, ++root->vIndex);
 					for (j = root->vIndex; j > i; j--)
 					{
 						*(root->vArray + j) = *(root->vArray + (j - 1));
@@ -228,7 +231,7 @@ btNode *insertBtNode(btNode *root, int data)
 		{
 			if ((*(root->vArray + (i - 1)))->right == NULL)
 			{
-				root->vArray = growNodeArray(root->vArray, ++root->vIndex);
+            	growNodeArray(&root->vArray, ++root->vIndex);
 				*(root->vArray + root->vIndex) = createNode(data);
 			}
 			else
@@ -236,7 +239,7 @@ btNode *insertBtNode(btNode *root, int data)
 				temp = insertBtNode((*(root->vArray + (i - 1)))->right, data);
 				if (temp->split == 1)
 				{
-					root->vArray = growNodeArray(root->vArray, ++root->vIndex);
+                	growNodeArray(&root->vArray, ++root->vIndex);
 					*(root->vArray + root->vIndex) = *(temp->vArray + temp->vIndex);
 					free(temp->vArray);
 					free(temp);
@@ -264,112 +267,80 @@ btNode *insertBtNode(btNode *root, int data)
 	return root;
 }
 
-node** shrinkNodeArray(node **vArray, int size) {
-	if(size < 0) {
-		free(vArray);
-		vArray = NULL;
+
+void shrinkNodeArray(node*** vArray, int size) {
+	*vArray = (node**)realloc((*vArray), (size + 1) * sizeof(node *));
+	if (!(*vArray))
+		printf("Node pointer memory not allocated.\n");
+}
+
+void shiftLeft(btNode** root, int index) {
+	int i;
+	for(i = index; i < (*root)->vIndex; i++)
+		(*root)->vArray[i] = (*root)->vArray[i+1];
+    (*root)->vArray[i] = NULL;
+}
+
+void shiftRight(btNode** root, int index) {
+	int i;
+	for(i = (*root)->vIndex; i > index; i--)
+		(*root)->vArray[i] = (*root)->vArray[i-1];
+	(*root)->vArray[i] = NULL;
+}
+
+void balanceRight(btNode** root, int i) {
+	if((*root)->vIndex == 0) {
+		if((*root)->vArray[i]->left != NULL) {
+			if((*root)->vArray[i]->left->vIndex == 0 && (*root)->vArray[i]->right == NULL) {
+				growNodeArray(&(*root)->vArray, ++(*root)->vIndex);
+				shiftRight(root, i);
+				(*root)->vArray[i] = (*root)->vArray[i+1]->left->vArray[0];
+				free((*root)->vArray[i+1]->left->vArray);
+				free((*root)->vArray[i+1]->left);
+				(*root)->vArray[i+1]->left = NULL;
+				(*root)->vArray[i+1]->lHeight = 0;
+			}
+			else if((*root)->vArray[i]->left->vIndex < maxValue-1) {
+				growNodeArray(&(*root)->vArray, ++(*root)->vIndex);
+				shiftRight(root, i);
+				(*root)->vArray[i] = (*root)->vArray[i+1]->left->vArray[0];
+				(*root)->vArray[i+1]->left = (*root)->vArray[i]->right;
+				if((*root)->vArray[i+1]->middleLR == 0 || (*root)->vArray[i+1]->middleLR == 2)
+					(*root)->vArray[i+1]->middleLR+=1;
+				(*root)->vArray[i+1]->lHeight = (*root)->vArray[i+1]->left->vArray[0]->lHeight + 1;
+			}
+		}
 	}
 	else {
-		vArray = (node**)realloc(vArray, (size+1) * sizeof(node**));
-		if (!vArray)
-			printf("vArray shrink null.\n");
+		if((*root)->vArray[i+1]->right != NULL) {
+			if((*root)->vArray[i+1]->right->vIndex < maxValue-1) {
+				growNodeArray(&(*root)->vArray[i+1]->right->vArray, ++(*root)->vArray[i+1]->right->vIndex);
+				shiftRight(&(*root)->vArray[i+1]->right, (*root)->vArray[i+1]->right->vIndex-1);
+			}
+		}
     }
-	return vArray;
-}
-
-void shiftLeft(btNode** root, int i) {
-	while(i < (*root)->vIndex) {
-		(*root)->vArray[i] = (*root)->vArray[i+1];
-		i++;
-	}
-}
-
-void shiftRight(btNode** root, int i) {
-	while(i) {
-		(*root)->vArray[i] = (*root)->vArray[i-1];
-		i--;
-	}
-}
-
-void deleteShiftLeft(btNode** root, int delIndex) {
-	int i;
-	free((*root)->vArray[delIndex]);
-	(*root)->vArray[delIndex] = NULL;
-    shiftLeft(root, delIndex);
-	(*root)->vArray = shrinkNodeArray((*root)->vArray, --(*root)->vIndex);
-}
-
-void deleteNode(btNode** root, int delIndex) {
-	free((*root)->vArray[delIndex]);
-	(*root)->vArray = shrinkNodeArray((*root)->vArray, --(*root)->vIndex);
-}
-
-void vArrayNodeMove(btNode** src, int src_index, btNode** dst, int dst_index) {
-	(*dst)->vArray[dst_index] = (*src)->vArray[src_index];
-	shiftLeft(src, src_index);
-	(*src)->vArray = shrinkNodeArray((*src)->vArray, --(*src)->vIndex);
 }
 
 void balanceLeft(btNode** root, int i) {
-	if((*root)->vArray[i]->right->vIndex > 0) {
-		(*root)->vArray[i]->left->vArray = growNodeArray((*root)->vArray[i]->left->vArray, ++(*root)->vArray[i]->left->vIndex);
-		(*root)->vArray[i]->left->vArray[(*root)->vArray[i]->left->vIndex] = createNode((*root)->vArray[i]->data);
-		(*root)->vArray[i]->data = (*root)->vArray[i]->right->vArray[0]->data;
-		free((*root)->vArray[i]->right->vArray[0]);
-		(*root)->vArray[i]->right->vArray[0] = NULL;
-		shiftLeft(&(*root)->vArray[i]->right, 0);
-		(*root)->vArray[i]->right->vArray = shrinkNodeArray((*root)->vArray[i]->right->vArray, --(*root)->vArray[i]->right->vIndex);
-	}
-	else {
-		if(i < (*root)->vIndex) {
-			(*root)->vArray[i]->right->vArray = growNodeArray((*root)->vArray[i]->right->vArray, ++(*root)->vArray[i]->right->vIndex);
-			shiftRight(&(*root)->vArray[i]->right, (*root)->vArray[i]->right->vIndex);
-			(*root)->vArray[i]->right->vArray[0] = createNode((*root)->vArray[i]->data);
-			free((*root)->vArray[i]);
-			if((*root)->vArray[i+1]->middleLR == 1 || (*root)->vArray[i+1]->middleLR == 3)
-				(*root)->vArray[i+1]->middleLR-=1;
-			shiftLeft(root, i);
-			(*root)->vArray = shrinkNodeArray((*root)->vArray, --(*root)->vIndex);
+	if((*root)->vIndex == 0) {
+		if((*root)->vArray[i]->right != NULL) {
+			if((*root)->vArray[i]->left == NULL && (*root)->vArray[i]->right->vIndex == 0) {
+				growNodeArray(&(*root)->vArray, ++(*root)->vIndex);
+				(*root)->vArray[(*root)->vIndex] = (*root)->vArray[i]->right->vArray[0];
+				free((*root)->vArray[i]->right->vArray);
+				free((*root)->vArray[i]->right);
+				(*root)->vArray[i]->right = NULL;
+				(*root)->vArray[i]->rHeight = 0;
+			}
+			else if((*root)->vArray[i]->left != NULL && (*root)->vIndex < maxValue-1 && (*root)->vArray[i]->right->vIndex < maxValue-1) {
+				growNodeArray(&(*root)->vArray, ++(*root)->vIndex);
+				(*root)->vArray[(*root)->vIndex] = (*root)->vArray[i]->right->vArray[0];
+				(*root)->vArray[i]->right = (*root)->vArray[i+1]->left;
+				if((*root)->vArray[i]->middleLR == 0 || (*root)->vArray[i]->middleLR == 1)
+					(*root)->vArray[i]->middleLR+=2;
+				(*root)->vArray[i]->rHeight = (*root)->vArray[i]->right->vArray[0]->rHeight + 1;
+			}
 		}
-		else {
-			(*root)->vArray = growNodeArray((*root)->vArray, ++(*root)->vIndex);
-			(*root)->vArray[(*root)->vIndex] = (*root)->vArray[i]->right->vArray[0];
-			(*root)->vArray[i]->right->vArray[0] = NULL;
-			(*root)->vArray[i]->rHeight = 0;
-			free((*root)->vArray[i]->right);
-			(*root)->vArray[i]->right = NULL;
-			free((*root)->vArray[i]->left);
-			(*root)->vArray[i]->left = NULL;
-			(*root)->vArray[i]->lHeight = 0;
-		}
-	}
-}
-
-void balanceLeftRight(btNode** root, int i) {
-	if((*root)->vArray[i]->right->vIndex > 0) {
-		(*root)->vArray[i]->left->vArray = growNodeArray((*root)->vArray[i]->left->vArray, ++(*root)->vArray[i]->left->vIndex);
-		(*root)->vArray[i]->left->vArray[(*root)->vArray[i]->left->vIndex] = createNode((*root)->vArray[i]->data);
-		(*root)->vArray[i]->data = (*root)->vArray[i]->right->vArray[0]->data;
-		shiftLeft(&(*root)->vArray[i]->right, 0);
-        (*root)->vArray[i]->right->vArray = shrinkNodeArray((*root)->vArray[i]->right->vArray, --(*root)->vArray[i]->right->vIndex);
-	}
-	else if((*root)->vArray[i-1]->left->vIndex > 0) {
-		(*root)->vArray[i]->left->vArray = growNodeArray((*root)->vArray[i]->left->vArray, ++(*root)->vArray[i]->left->vIndex);
-		(*root)->vArray[i]->left->vArray[(*root)->vArray[i]->left->vIndex] = createNode((*root)->vArray[i-1]->data);
-		(*root)->vArray[i-1]->data = (*root)->vArray[i-1]->left->vArray[(*root)->vArray[i-1]->left->vIndex]->data;
-		(*root)->vArray[i-1]->left->vArray = shrinkNodeArray((*root)->vArray[i-1]->left->vArray, --(*root)->vArray[i-1]->left->vIndex);
-	}
-	else {
-
-	}
-}
-
-void balance(btNode** root, int i) {
-	if(i == 0) {
-		balanceLeft(root, i);
-	}
-	else {
-		balanceLeftRight(root, i);
 	}
 }
 
@@ -377,83 +348,98 @@ void findMaxNode(btNode** root, int* data) {
 	if((*root)->vArray[(*root)->vIndex]->right == NULL) {
 		*data = (*root)->vArray[(*root)->vIndex]->data;
 		free((*root)->vArray[(*root)->vIndex]);
-        (*root)->vArray = shrinkNodeArray((*root)->vArray, --(*root)->vIndex);
-	}
-	else findMaxNode(root, data);
-}
-
-void findMinNode()
-
-void deleteBtNode(btNode** root, int data) {
-	int i;
-	for(i = 0; i <= (*root)->vIndex; i++) {
-		if(data < (*root)->vArray[i]->data) {
-			deleteBtNode(&(*root)->vArray[i]->left, data);
-			if((*root)->vArray[i]->left->vArray == NULL) {
-				balance(root, i);
-			}
-			break;
+		if((*root)->vIndex > 0) {
+			shrinkNodeArray(&(*root)->vArray, --(*root)->vIndex);
 		}
-		else if(data > (*root)->vArray[i]->data && i == (*root)->vIndex) {
-			deleteBtNode(&(*root)->vArray[i]->right, data);
-			break;
-		}
-		else if(data == (*root)->vArray[i]->data){
-			if((*root)->vArray[i]->left == NULL && (*root)->vArray[i]->right == NULL) {
-				if(i == (*root)->vIndex) {
-                	deleteNode(root, i);
-				}
-				else {
-					deleteShiftLeft(root, i);
-				}
-			}
-			else if((*root)->vArray[i]->left != NULL && (*root)->vArray[i]->left->vIndex > 0) {
-				findMaxNode(&(*root)->vArray[i]->left, &(*root)->vArray[i]->data);
-			}
-			else if((*root)->vArray[i]->right != NULL && (*root)->vArray[i]->right->vIndex > 0) {
-            	findMaxNode(&(*root)->vArray[i]->right, &(*root)->vArray[i]->data);
-			}
-            break;
-		}
-	}
-}
-
-void deleteBT(btNode** root, int data) {
-	if(*root != NULL) {
-        deleteBtNode(root, data);
-		if((*root)->vArray == NULL) {
+		else {
+			free((*root)->vArray);
 			free(*root);
 			*root = NULL;
-        }
+		}
 	}
-
+	else {
+		findMaxNode(&(*root)->vArray[(*root)->vIndex]->right, data);
+		if((*root)->vArray[(*root)->vIndex]->right == NULL) {
+			(*root)->vArray[(*root)->vIndex]->rHeight = 0;
+			balanceRight(root, (*root)->vIndex);
+		}
+    }
 }
+
+void checkLRHeight(btNode** root, int i) {
+	if((*root)->vArray[i]->lHeight < (*root)->vArray[i]->rHeight) {
+    	balanceLeft(root, i);
+	}
+	else if((*root)->vArray[i]->lHeight > (*root)->vArray[i]->rHeight) {
+    	balanceRight(root, i);
+	}
+}
+
+void updateLeftHeight(btNode** root, int i) {
+	if((*root)->vArray[i]->left == NULL)
+		(*root)->vArray[i]->lHeight = 0;
+	else
+		(*root)->vArray[i]->lHeight = (*root)->vArray[i]->left->vArray[0]->lHeight + 1;
+	checkLRHeight(root, i);
+}
+
+void updateRightHeight(btNode** root, int i) {
+	if((*root)->vArray[i]->right == NULL)
+		(*root)->vArray[i]->rHeight = 0;
+	else
+		(*root)->vArray[i]->rHeight = (*root)->vArray[i]->right->vArray[0]->rHeight + 1;
+	checkLRHeight(root, i);
+}
+
+void deleteNode(btNode** root, int data) {
+	int i;
+	for(i = 0; i <= (*root)->vIndex; i++) {
+		if(data == (*root)->vArray[i]->data) {
+			if((*root)->vArray[i]->left != NULL) {
+				findMaxNode(&(*root)->vArray[i]->left, &(*root)->vArray[i]->data);
+				updateLeftHeight(root, i);
+			}
+			break;
+		}
+		else if(data < (*root)->vArray[i]->data) {
+			deleteNode(&(*root)->vArray[i]->left, data);
+			updateLeftHeight(root, i);
+			break;
+		}
+		else if(data > (*root)->vArray[i]->data){
+        	deleteNode(&(*root)->vArray[i]->right, data);
+			updateRightHeight(root, i);
+			break;
+		}
+	}
+}
+
 int main()
 {
-	btNode* root = createBtNode();
-	root->vArray = growNodeArray(root->vArray, root->vIndex+=2);
-	root->vArray[0] = createNode(3);
-	root->vArray[0]->left = createBtNode();
-	root->vArray[0]->left->vArray = growNodeArray(root->vArray[0]->left->vArray, root->vArray[0]->left->vIndex+=2);
-	root->vArray[0]->left->vArray[0] = createNode(1);
-	root->vArray[0]->left->vArray[1] = createNode(2);
-	root->vArray[0]->lHeight = root->vArray[0]->left->vArray[0]->lHeight + 1;
-	root->vArray[0]->right = createBtNode();
-	root->vArray[0]->right->vArray = growNodeArray(root->vArray[0]->right->vArray, root->vArray[0]->right->vIndex+=2);
-	root->vArray[0]->right->vArray[0] = createNode(4);
-	root->vArray[0]->right->vArray[1] = createNode(5);
-	root->vArray[0]->rHeight = root->vArray[0]->right->vArray[0]->rHeight + 1;
-	root->vArray[1] = createNode(6);
-	root->vArray[1]->left = root->vArray[0]->right;
-	root->vArray[1]->lHeight = root->vArray[1]->left->vArray[0]->lHeight + 1;
-	root->vArray[1]->middleLR = 1;
-	root->vArray[1]->right = createBtNode();
-	root->vArray[1]->right->vArray = growNodeArray(root->vArray[1]->right->vArray, root->vArray[1]->right->vIndex+=2);
-	root->vArray[1]->right->vArray[0] = createNode(7);
-	root->vArray[1]->right->vArray[1] = createNode(8);
-	root->vArray[1]->rHeight = root->vArray[1]->right->vArray[0]->rHeight + 1;
+	btNode* root = NULL;
+	treeDegree =  3;
+	maxValue = treeDegree - 1;
 
-	deleteBT(&root, 3);
-	deleteBT(&root, 2);
+	root = insertBtNode(NULL, 20);
+	root = insertBtNode(root, 40);
+	root = insertBtNode(root, 10);
+	root = insertBtNode(root, 30);
+	root = insertBtNode(root, 33);
+	root = insertBtNode(root, 50);
+	root = insertBtNode(root, 60);
+	root = insertBtNode(root, 5);
+	root = insertBtNode(root, 15);
+	root = insertBtNode(root, 25);
+	root = insertBtNode(root, 28);
+	root = insertBtNode(root, 31);
+	root = insertBtNode(root, 35);
+	root = insertBtNode(root, 45);
+	root = insertBtNode(root, 55);
+	root = insertBtNode(root, 65);
+
+	deleteNode(&root, 33);
+	deleteNode(&root, 20);
+	deleteNode(&root, 40);
+
 	return 0;
 }
