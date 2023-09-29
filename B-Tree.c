@@ -27,6 +27,7 @@ struct btNode
 
 btNode *insertBtNode(btNode *, int);
 void rootMoveUp(btNode** root, int i, char LR);
+void resetMiddleLR(int *middleLR);
 
 node* createNode(int data)
 {
@@ -216,15 +217,37 @@ void balanceLeft(btNode** root, int i) {
 				heightUpdate((*root)->vArray[i], 1);
 			}
 			else {
-				temp = (*root)->vArray[i]->right;
+            	temp = (*root)->vArray[i]->right;
 				(*root)->vArray[i]->right = NULL;
 				(*root)->vArray[i]->rHeight = 0;
-				growNodeArray(&(*root)->vArray, ++(*root)->vIndex);
-				(*root)->vArray[(*root)->vIndex] = temp->vArray[0];
-				free(temp->vArray);
-				free(temp);
-				temp = NULL;
-			}
+				resetMiddleLR(&(*root)->vArray[i]->middleLR);
+
+				if(i == 0 && (*root)->vIndex == 0) {
+					growNodeArray(&(*root)->vArray, ++(*root)->vIndex);
+					(*root)->vArray[(*root)->vIndex] = temp->vArray[temp->vIndex];
+					free(temp->vArray);
+					free(temp);
+					temp = NULL;
+				}
+				else {
+                	growNodeArray(&temp->vArray, ++temp->vIndex);
+					shiftRight(&temp, 0);
+					temp->vArray[0] = (*root)->vArray[i];
+					if(i < (*root)->vIndex) {
+						shiftLeft(root, i);
+						shrinkNodeArray(&(*root)->vArray, --(*root)->vIndex);
+						(*root)->vArray[i]->left = temp;
+						subMiddleLR(&(*root)->vArray[i]->middleLR, 1);
+						heightUpdate((*root)->vArray[i], 1);
+					}
+					else {
+						shrinkNodeArray(&(*root)->vArray, --(*root)->vIndex);
+						(*root)->vArray[(*root)->vIndex]->right = temp;
+						subMiddleLR(&(*root)->vArray[(*root)->vIndex]->middleLR, 2);
+						heightUpdate((*root)->vArray[(*root)->vIndex], 2);
+					}
+				}
+            }
 		}
 		else {
 			if((*root)->vArray[i]->right->vIndex < maxValue-1) {
@@ -331,15 +354,33 @@ void balanceRight(btNode** root, int i) {
 				heightUpdate((*root)->vArray[i], 2);
 			}
 			else {
-				temp = (*root)->vArray[i]->left;
+            	temp = (*root)->vArray[i]->left;
 				(*root)->vArray[i]->left = NULL;
 				(*root)->vArray[i]->lHeight = 0;
-                growNodeArray(&(*root)->vArray, ++(*root)->vIndex);
-				shiftRight(root, 0);
-				(*root)->vArray[0] = temp->vArray[0];
-				free(temp->vArray);
-				free(temp);
-				temp = NULL;
+				resetMiddleLR(&(*root)->vArray[i]->middleLR);
+				growNodeArray(&temp->vArray, ++temp->vIndex);
+				temp->vArray[temp->vIndex] = (*root)->vArray[i];
+				if(i == 0 && i == (*root)->vIndex) {
+					free((*root)->vArray);
+					free((*root));
+					(*root) = temp;
+				}
+				else {
+					if(i < (*root)->vIndex) {
+						shiftLeft(root, i);
+						shrinkNodeArray(&(*root)->vArray, --(*root)->vIndex);
+						(*root)->vArray[i]->left = temp;
+						subMiddleLR(&(*root)->vArray[i]->middleLR, 1);
+						heightUpdate((*root)->vArray[i], 1);
+					}
+					else {
+						shrinkNodeArray(&(*root)->vArray, --(*root)->vIndex);
+						(*root)->vArray[(*root)->vIndex]->right = temp;
+						subMiddleLR(&(*root)->vArray[(*root)->vIndex]->middleLR, 2);
+						heightUpdate((*root)->vArray[(*root)->vIndex], 2);
+					}
+				}
+
 			}
 		}
 		else {
@@ -482,13 +523,13 @@ void inorder(btNode* root) {
 	if(root != NULL) {
 		int i;
 		for(i = 0; i <= root->vIndex; i++) {
-			if(root->vArray[i]->left != NULL)
+			if(root->vArray[i]->middleLR != 1 && root->vArray[i]->middleLR != 3 && root->vArray[i]->left != NULL)
 				inorder(root->vArray[i]->left);
 
-			printf("%2d ", root->vArray[i]->data);
+			printf("%d ", root->vArray[i]->data);
 
-			if(root->vArray[i]->right != NULL)
-            	inorder(root->vArray[i]->right);
+			if(root->vArray[i]->middleLR != 2 && root->vArray[i]->middleLR != 3 && root->vArray[i]->right != NULL)
+				inorder(root->vArray[i]->right);
 		}
 	}
 }
@@ -619,29 +660,29 @@ void insertNode(btNode** root, int data) {
 int main()
 {
 	btNode* root = NULL;
-	int insertData[] = {20, 40, 10, 30, 33, 50, 60, 5, 15, 25, 28, 31, 35, 45, 55, 65};
-	int deleteData[] = {5, 40, 28, 30, 65, 35, 50, 33, 25, 45, 10, 20, 55, 15, 31, 60};
+	int insertData[] = {30, 33, 65, 28, 31, 35, 20, 15, 25, 40, 50, 60, 5, 45, 55, 10};
+	int deleteData[] = {55, 15, 5, 35, 50, 33, 30, 65, 25, 60, 40, 20, 31, 10, 45, 28};
 	int i,
 		iSize = sizeof(insertData)/ sizeof(insertData[0]),
 		dSize = sizeof(deleteData)/ sizeof(deleteData[0]);
 
-	treeDegree =  4;
+	treeDegree =  7;
 	maxValue = treeDegree - 1;
 
 	for(i = 0; i < iSize; i++) {
 		printf("Insert %2d\n", insertData[i]);
 		insertNode(&root, insertData[i]);
-//		inorder(root);
-//		printf("\n");
+		inorder(root);
+		printf("\n");
 	}
-
 	for(i = 0; i < dSize; i++) {
 		printf("Delete %2d\n", deleteData[i]);
 		deleteNode(&root, deleteData[i]);
 		inorder(root);
-    	printf("\n");
+		printf("\n");
 	}
 
+	printf("\n");
 	system("PAUSE");
 	return 0;
 }
