@@ -1,5 +1,4 @@
-/* B+ Tree implementation my own logic.
-*/
+/* B+ Tree implementation my own logic. */
 
 #include <stdio.h>
 #include <conio.h>
@@ -9,259 +8,273 @@
 
 short degree;
 typedef struct bp_tree bp_tree;
-typedef struct node{
-	int value;
-	bp_tree* left;
-	bp_tree* right;
+typedef struct node node;
+
+typedef struct data {
+	int id;
+	void* db_ptr;
+}data;
+
+typedef struct node {
+	data** data_arr;
+	int data_index;
+	node* next;
 }node;
 
-struct bp_tree{
-	node** arr_node;
-	int arr_node_index;
+struct bp_tree {
+	node* arr_node;
+	bp_tree** bp_tree_arr;
+	int bp_tree_index;
 };
 
-void create_tree(bp_tree** tree) {
+void create_bp_tree(bp_tree** tree) {
 	*tree = (bp_tree*)malloc(sizeof(bp_tree));
 	if(*tree == NULL) {
-		printf("In create_tree memory allocation failed.\n");
+		printf("create_bp_tree memory allocation failed.\n");
 		exit(1);
 	}
 	(*tree)->arr_node = NULL;
-	(*tree)->arr_node_index = -1;
+	(*tree)->bp_tree_arr = NULL;
+	(*tree)->bp_tree_index = -1;
 }
 
-void grow_node_array(bp_tree** tree, int index) {
-	(*tree)->arr_node_index+=index;
-   (*tree)->arr_node = (node**)realloc((*tree)->arr_node, (sizeof(node*)*((*tree)->arr_node_index+1)));
+void create_node(bp_tree** tree) {
+	(*tree)->arr_node = (node*)malloc(sizeof(node));
 	if((*tree)->arr_node == NULL) {
-		printf("In create_tree memory allocation failed.\n");
-    	(*tree)->arr_node_index-=index;
+		printf("create_node memory allocation failed.\n");
 		exit(1);
 	}
+	(*tree)->arr_node->data_arr = NULL;
+	(*tree)->arr_node->data_index = -1;
+	(*tree)->arr_node->next = NULL;
 }
 
-void set_node_value(bp_tree** tree, int i, int value) {
-	(*tree)->arr_node[i] = (node*)malloc(sizeof(node));
-	if((*tree)->arr_node[i] == NULL) {
-		printf("In set_node_value memory allocation failed.\n");
-		exit(1);
-	}
-	(*tree)->arr_node[i]->value = value;
-	(*tree)->arr_node[i]->left = NULL;
-	(*tree)->arr_node[i]->right = NULL;
-}
-
-void shift_right(bp_tree** tree, int index) {
-	int i;
-	for(i = (*tree)->arr_node_index; i > index; i--)
-		(*tree)->arr_node[i] = (*tree)->arr_node[i-1];
-}
-
-void insert_left(bp_tree** left, bp_tree** tree, int index) {
-	int i;
-	for(i = 0; i <= index; i++) {
-		(*left)->arr_node[i] = (*tree)->arr_node[i];
-		(*tree)->arr_node[i] = NULL;
-	}
-}
-
-void shift_left(bp_tree** tree, int index) {
-	int i;
-	for(i = 0; i <= (*tree)->arr_node_index-index; i++)
-		(*tree)->arr_node[i] = (*tree)->arr_node[index+i];
-}
-
-void shrink_node_array(bp_tree** tree, int shrink_nodes) {
-	(*tree)->arr_node_index-=shrink_nodes;
-	(*tree)->arr_node = (node**)realloc((*tree)->arr_node, sizeof(node*)* ((*tree)->arr_node_index+1));
+void grow_data_array(bp_tree** tree, int size) {
+	(*tree)->arr_node->data_index+=size;
+	(*tree)->arr_node->data_arr = (data**)realloc((*tree)->arr_node->data_arr, sizeof(data*)*((*tree)->arr_node->data_index+1));
 	if((*tree)->arr_node == NULL) {
-		printf("In shrink_node_array memory reallocation failed.\n");
-		(*tree)->arr_node_index+=shrink_nodes;
+		printf("grow_data_array memory allocation failed.\n");
 		exit(1);
 	}
 }
 
-void left_split_leaf_node(bp_tree** tree) {
-	int mid, i;
-	bp_tree* root = NULL, *right = NULL;
-
-	mid = (*tree)->arr_node_index/2;
-
-	create_tree(&root);
-	grow_node_array(&root, 1);
-	set_node_value(&root, 0, (*tree)->arr_node[mid]->value);
-
-	create_tree(&right);
-	grow_node_array(&right, (*tree)->arr_node_index-mid);
-	for(i = 0; i < (*tree)->arr_node_index-mid; i++) {
-		right->arr_node[i] = (*tree)->arr_node[mid+1+i];
-		(*tree)->arr_node[mid+1+i] = NULL;
+void create_data(bp_tree** tree, int i, int id) {
+	(*tree)->arr_node->data_arr[i] = (data*)malloc(sizeof(data));
+	if((*tree)->arr_node->data_arr[i] == NULL) {
+		printf("create_data memory allocation failed.\n");
+		exit(1);
 	}
-
-	shrink_node_array(tree, (*tree)->arr_node_index-mid);
-
-	root->arr_node[0]->left = *tree;
-	root->arr_node[0]->left->arr_node[root->arr_node[0]->left->arr_node_index]->right = right;
-	root->arr_node[0]->right = right;
-
-	*tree = root;
-
+	(*tree)->arr_node->data_arr[i]->id = id;
+	(*tree)->arr_node->data_arr[i]->db_ptr = NULL;
 }
 
-void right_split_leaf_node(bp_tree** tree) {
-	int mid;
-	bp_tree* root = NULL, *left = NULL;
-
-	mid = (*tree)->arr_node_index/2;
-
-	create_tree(&left);
-	grow_node_array(&left, mid);
-	insert_left(&left, tree, mid-1);
-
-	create_tree(&root);
-	grow_node_array(&root, 1);
-	set_node_value(&root, 0, (*tree)->arr_node[mid]->value);
-
-	shift_left(tree, mid);
-	shrink_node_array(tree, mid);
-
-	root->arr_node[0]->left = left;
-	root->arr_node[0]->left->arr_node[root->arr_node[0]->left->arr_node_index]->right = *tree;
-	root->arr_node[0]->right = *tree;
-
-	*tree = root;
-}
-
-void insert_node(bp_tree** tree, int value, int i) {
-	grow_node_array(tree, 1);
-	if(value < (*tree)->arr_node[i]->value)
-		shift_right(tree, i);
-	else
-		i++;
-	set_node_value(tree, i, value);
-}
-
-void split_node(bp_tree** tree) {
-	int mid, i, count = 0;
-	bp_tree* left = NULL, *right = NULL;
-
-	mid = (*tree)->arr_node_index/2;
-
-	if((*tree)->arr_node[mid]->left != NULL) {
-		(*tree)->arr_node[mid-1]->right = (*tree)->arr_node[mid]->left;
-		(*tree)->arr_node[mid]->left = NULL;
-    }
-
-	if((*tree)->arr_node[mid]->right != NULL) {
-		(*tree)->arr_node[mid+1]->left = (*tree)->arr_node[mid]->right;
-    	(*tree)->arr_node[mid]->right = NULL;
-	}
-
-	create_tree(&left);
-	grow_node_array(&left, mid);
-	for(i = 0; i < mid; i++) {
-		left->arr_node[i] = (*tree)->arr_node[i];
-		(*tree)->arr_node[i] = NULL;
-		count++;
-	}
-
-	create_tree(&right);
-	grow_node_array(&right, (*tree)->arr_node_index-mid);
-	for(i = 0; (mid+1+i) <= (*tree)->arr_node_index; i++) {
-		right->arr_node[i] = (*tree)->arr_node[mid+1+i];
-		(*tree)->arr_node[mid+1+i] = NULL;
-		count++;
-	}
-
-	(*tree)->arr_node[0] = (*tree)->arr_node[mid];
-	(*tree)->arr_node[mid] = NULL;
-	shrink_node_array(tree, count);
-
-	(*tree)->arr_node[0]->left = left;
-	(*tree)->arr_node[0]->right = right;
-}
-
-void insert(bp_tree** tree, int value) {
+void shift_right_data_arr(bp_tree** tree, int end) {
 	int i;
-	if(*tree == NULL) {
-		create_tree(tree);
-		grow_node_array(tree, 1);
-		set_node_value(tree, 0, value);
+	for(i = (*tree)->arr_node->data_index; i > end; i--)
+		(*tree)->arr_node->data_arr[i] = (*tree)->arr_node->data_arr[i-1];
+}
+
+void grow_bp_tree_array(bp_tree** tree, int size) {
+	(*tree)->bp_tree_index+=size;
+	(*tree)->bp_tree_arr = (bp_tree**)realloc((*tree)->bp_tree_arr, ((*tree)->bp_tree_index+1) * sizeof(bp_tree*));
+	if((*tree)->bp_tree_arr == NULL) {
+		printf("grow_bp_tree_array memory allocation failed.\n");
+		exit(1);
+	}
+}
+
+void shrink_data_array(bp_tree** tree, int size) {
+	(*tree)->arr_node->data_index-=size;
+	(*tree)->arr_node->data_arr = (data**)realloc((*tree)->arr_node->data_arr, sizeof(data*)*((*tree)->arr_node->data_index+1));
+	if((*tree)->arr_node == NULL) {
+		printf("shrink_data_array memory allocation failed.\n");
+		exit(1);
+	}
+}
+
+int find_input_index(bp_tree** tree, int id) {
+	int i;
+	for(i = 0; i < (*tree)->arr_node->data_index; i++) {
+		if(id < (*tree)->arr_node->data_arr[i]->id) {
+			shift_right_data_arr(tree, i);
+			break;
+		}
+	}
+	return i;
+}
+
+void shift_right_bp_tree_arr(bp_tree** tree, int end) {
+	int i;
+	for(i = (*tree)->bp_tree_index; i > end; i--)
+		(*tree)->bp_tree_arr[i] = (*tree)->bp_tree_arr[i-1];
+}
+
+void shift_left_bp_tree_arr(bp_tree** tree, int start) {
+	int i;
+	for(i = 0; i < (*tree)->bp_tree_index; i++)
+		(*tree)->bp_tree_arr[i] = (*tree)->bp_tree_arr[start+i];
+}
+
+void copy_bp_tree_array(bp_tree** c_tree, int mid, bp_tree** m_tree) {
+	int i;
+	for(i = 0; i < mid; i++)
+		(*c_tree)->bp_tree_arr[i] = (*m_tree)->bp_tree_arr[i];
+}
+
+void copy_data_arr(bp_tree** c_tree, int mid, bp_tree** m_tree) {
+	int i;
+	for(i = 0; i < mid; i++)
+		(*c_tree)->arr_node->data_arr[i] = (*m_tree)->arr_node->data_arr[i];
+}
+
+void shrink_bp_tree_arr(bp_tree** tree, int size) {
+	(*tree)->bp_tree_index-=size;
+	(*tree)->bp_tree_arr = (bp_tree**)realloc((*tree)->bp_tree_arr, (sizeof(bp_tree*)*((*tree)->bp_tree_index+1)));
+	if((*tree)->arr_node == NULL) {
+		printf("shrink_bp_tree_arr memory allocation failed.\n");
+		exit(1);
+	}
+}
+
+void split_bp_tree(bp_tree** root, bp_tree** tree) {
+	bp_tree* left = NULL;
+	int mid, i, index = 0, flag = 0;
+
+	mid = (*tree)->arr_node->data_index/2;
+
+	//root
+	if(*root == NULL) {
+		flag = 1;
+		create_bp_tree(root);
+		create_node(root);
+	}
+
+	grow_data_array(root, 1);
+	index = find_input_index(root, (*tree)->arr_node->data_arr[mid]->id);
+	if((*tree)->bp_tree_index == -1) {
+		create_data(root, index, (*tree)->arr_node->data_arr[mid]->id);
 	}
 	else {
-		for(i = 0; i <= (*tree)->arr_node_index; i++) {
-			if(value < (*tree)->arr_node[i]->value) {
-				if((*tree)->arr_node[i]->left != NULL) {
-					insert(&(*tree)->arr_node[i]->left, value);
-					if((*tree)->arr_node[i]->left->arr_node_index == 0) {
-						grow_node_array(tree, 1);
-						shift_right(tree, i);
-						(*tree)->arr_node[i] = (*tree)->arr_node[i+1]->left->arr_node[0];
-						(*tree)->arr_node[i+1]->left->arr_node[0] = NULL;
-						free((*tree)->arr_node[i+1]->left->arr_node);
-						free((*tree)->arr_node[i+1]->left);
-						(*tree)->arr_node[i+1]->left = NULL;
-					}
-				}
-				else {
-					insert_node(tree, value, i);
-					if((*tree)->arr_node_index == degree-1) {
-						left_split_leaf_node(tree);
-					}
-				}
-				break;
-			}
-			else if(i == (*tree)->arr_node_index) {
-				if((*tree)->arr_node[i]->right != NULL) {
-					insert(&(*tree)->arr_node[i]->right, value);
-					if((*tree)->arr_node[i]->right->arr_node_index == 0) {
-						grow_node_array(tree, 1);
-						(*tree)->arr_node[i+1] = (*tree)->arr_node[i]->right->arr_node[0];
-						(*tree)->arr_node[i]->right->arr_node[0] = NULL;
-						free((*tree)->arr_node[i]->right->arr_node);
-						free((*tree)->arr_node[i]->right);
-						(*tree)->arr_node[i]->right = NULL;
-						(*tree)->arr_node[i]->left->arr_node[(*tree)->arr_node[i]->left->arr_node_index]->right = (*tree)->arr_node[i+1]->left;
-					}
-				}
-				else {
-					insert_node(tree, value, i);
-                	if((*tree)->arr_node_index == degree-1) {
-						right_split_leaf_node(tree);
-					}
-				}
-				break;
-			}
-		}
+		(*root)->arr_node->data_arr[index] = (*tree)->arr_node->data_arr[mid];
+		(*tree)->arr_node->data_arr[mid] = NULL;
+	}
 
-		if((*tree)->arr_node_index == degree-1) {
-			split_node(tree);
+
+	//left
+	create_bp_tree(&left);
+	create_node(&left);
+	grow_data_array(&left, mid);
+	copy_data_arr(&left, mid, tree);
+
+	if((*tree)->bp_tree_arr != NULL) {
+		grow_bp_tree_array(&left, mid+1);
+		copy_bp_tree_array(&left, mid+1, tree);
+		shift_left_bp_tree_arr(tree, mid+1);
+		shrink_bp_tree_arr(tree, mid+1);
+	}
+
+	//right
+	if((*tree)->arr_node->data_arr[mid] == NULL)
+		mid++;
+
+	for(i = 0; i <= mid; i++) {
+		if(mid+i > (*tree)->arr_node->data_index)
+			break;
+		(*tree)->arr_node->data_arr[i] = (*tree)->arr_node->data_arr[mid+i];
+	}
+
+	shrink_data_array(tree, mid);
+
+	if((*tree)->bp_tree_index == -1)
+		left->arr_node->next = (*tree)->arr_node;
+
+	grow_bp_tree_array(root, 1);
+	if(index < (*root)->bp_tree_index)
+		shift_right_bp_tree_arr(root, index);
+
+	(*root)->bp_tree_arr[index] = left;
+
+	if(index > 0 && (*root)->bp_tree_arr[index-1]->bp_tree_index == -1) {
+		(*root)->bp_tree_arr[index-1]->arr_node->next = (*root)->bp_tree_arr[index]->arr_node;
+    }
+
+	if((*root)->bp_tree_index < index+1) {
+		grow_bp_tree_array(root, 1);
+		(*root)->bp_tree_arr[index+1] = *tree;
+	}
+
+	if(flag == 1)
+		*tree = *root;
+
+}
+
+void insert_node(bp_tree** root, bp_tree** tree, int id) {
+	if((*tree)->arr_node->data_arr == NULL) {
+		grow_data_array(tree, 1);
+		create_data(tree, 0, id);
+	}
+	else {
+		int i;
+		for(i = 0; i <= (*tree)->arr_node->data_index; i++) {
+			if(id < (*tree)->arr_node->data_arr[i]->id) {
+				if((*tree)->bp_tree_arr == NULL) {
+					grow_data_array(tree, 1);
+					shift_right_data_arr(tree, i);
+					create_data(tree, i, id);
+				}
+				else {
+					insert_node(tree, &(*tree)->bp_tree_arr[i], id);
+				}
+				break;
+			}
+			else if(i == (*tree)->arr_node->data_index) {
+				if((*tree)->bp_tree_arr == NULL) {
+					grow_data_array(tree, 1);
+					create_data(tree, i+1, id);
+				}
+				else {
+					insert_node(tree, &(*tree)->bp_tree_arr[i+1], id);
+				}
+				break;
+			}
 		}
+		if((*tree)->arr_node->data_index == degree-1)
+			split_bp_tree(root, tree);
 	}
 }
 
-void print_ascending_order(bp_tree* tree) {
-	int i;
-	while(tree->arr_node[0]->left != NULL)
-		tree = tree->arr_node[0]->left;
+void insert(bp_tree** tree, int id) {
+	bp_tree* root = NULL;
+	if(*tree == NULL) {
+		create_bp_tree(tree);
+		create_node(tree);
+	}
+	insert_node(&root, tree, id);
+}
 
-	do{
-		for(i = 0; i <= tree->arr_node_index; i++)
-			printf("%d ", tree->arr_node[i]->value);
-    	tree = tree->arr_node[i-1]->right;
-	}while(tree);
+void print_id(bp_tree* temp) {
+    node* n_temp = NULL;
+	int i;
+	while(temp->bp_tree_index != -1)
+		temp = temp->bp_tree_arr[0];
+	n_temp = temp->arr_node;
+	 do {
+		for(i = 0; i <= n_temp->data_index; i++)
+			printf("%d ", n_temp->data_arr[i]->id);
+		n_temp = n_temp->next;
+	}while(n_temp != NULL);
 }
 
 int main() {
-	int value[] = {5, 10, 15, 25, 35, 40, 45, 50, 60};
-	bp_tree* tree = NULL;
-	int i, size = sizeof(value) / sizeof(value[0]);
+	int id[] = {5, 15, 10, 25, 35, 40, 45, 50, 60};
+	bp_tree* root = NULL;
+	int i, size = sizeof(id) / sizeof(*id);
 	degree = 3;
+	
 	for(i = 0; i < size; i++)
-		insert(&tree, value[size-1-i]);
+		insert(&root, id[size-1-i]);
 
-	print_ascending_order(tree);
-
+	print_id(root);
 	getch();
 	return 0;
 }
