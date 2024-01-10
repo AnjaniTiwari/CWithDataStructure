@@ -18,7 +18,7 @@ typedef struct data {
 typedef struct node {
 	data** data_arr;
 	int data_index;
-	
+	node* next;
 }node;
 
 struct bp_tree {
