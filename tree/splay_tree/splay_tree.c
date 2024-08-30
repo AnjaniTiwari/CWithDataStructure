@@ -112,18 +112,69 @@ void delete_bottom_up(splay_node** root, int data) {
         printf("Empty tree.\n");
 }
 
+
+void make_root_node(splay_node** root, int data) {
+	if(*root != NULL) {
+		if(data != (*root)->data) {
+			if(data < (*root)->data) {
+				make_root_node(&(*root)->left, data);
+				zig_rotation(root);
+			}
+			else {
+				make_root_node(&(*root)->right, data);
+				zag_rotation(root);
+            }
+		}
+	}
+}
+
+void make_predecssor_root(splay_node** root) {
+	if((*root)->right != NULL) {
+		make_predecssor_root(&(*root)->right);
+		zag_rotation(root);
+	}
+}
+
+void detach_and_join_subtree(splay_node** root) {
+	if((*root)->left != NULL) {
+    	splay_node* left_tree = NULL;
+		make_predecssor_root(&(*root)->left);
+		left_tree = (*root)->left;
+		(*root)->left = NULL;
+		left_tree->right = (*root)->right;
+		(*root)->right = NULL;
+		free(*root);
+		*root = left_tree;
+	}
+	else {
+		splay_node* right_tree = (*root)->right;
+		(*root)->right = NULL;
+		free(*root);
+        *root = right_tree;
+	}
+}
+
+void delete_top_down(splay_node** root, int data) {
+	if((*root) != NULL) {
+		make_root_node(root, data);
+		detach_and_join_subtree(root);
+    }
+	else
+		printf("Empty tree.\n");
+}
+
 int main() {
 	int arr[] = {10, 7, 15, 1, 9, 13, 20, -1, 8, 11, 14, 30};
 	int arr2[] = {14, -1, 1, 11, 13, 10, 7, 9, 30, 20, 15, 8};
 	unsigned int arr_count = sizeof(arr)/sizeof(arr[0]);
 	splay_node* root = NULL;
-	int i;
+	unsigned int i;
 
 	for(i = 0; i < arr_count; i++)
 		insert_splay_node(&root, arr[i]);
 
 	for(i = 0; i < arr_count; i++)
-		delete_bottom_up(&root, arr2[i]);
+		delete_top_down(&root, arr2[i]);
 
 	getch();
 	return 0;
