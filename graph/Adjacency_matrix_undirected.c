@@ -76,7 +76,14 @@ void connect_vertices(int** const graph, unsigned int vertices) {
 	}
 }
 
-int** create_graph(void) {
+void free_graph_memory(int** graph, unsigned int vertices) {
+	int i;
+	for(i = 0; i < vertices; ++i)
+		free(graph[i]);
+	free(graph);
+	graph = NULL;
+}
+void create_graph(void) {
 	unsigned int vertices;
 	int** graph = NULL;
 
@@ -86,18 +93,15 @@ int** create_graph(void) {
 		printf("please enter vertices input grater than 1.");
 	else
 		graph = make_grid(vertices, sizeof(int));
-	if(graph != NULL)
+	if(graph != NULL) {
 		connect_vertices(graph, vertices);
-
-	print_graph(graph, vertices);
-
-	return graph;
+		print_graph(graph, vertices);
+		free_graph_memory(graph, vertices);
+    }
 }
 
 int main() {
-	int** graph = NULL;
-
-	graph = create_graph();
+	create_graph();
 
 	getch();
 	return 0;
