@@ -5,19 +5,19 @@
 /*
 *   Adjacency matrix representation undirected graph.
 *
-*			  0
+*			  1
 *             |  \
-*   	  1   |   2
+*   	  2   |   3
 *          \  |  /
-*             3
+*             4
 */
 
 
-void print_graph(int** graph, unsigned short row, unsigned short column) {
+void print_graph(int** graph, unsigned short vertices) {
 	unsigned short i, j;
 	if(graph != NULL) {
-		for(i = 0; i < row; ++i) {
-			for(j = 0; j < column; ++j)
+		for(i = 0; i < vertices; ++i) {
+			for(j = 0; j < vertices; ++j)
 				printf("%d ", graph[i][j]);
 			printf("\n");
 		}
@@ -46,19 +46,22 @@ int** make_grid(unsigned int rows, unsigned int size) {
 	return graph;
 }
 
-void connect_vertices(int** const graph, unsigned int rows) {
-	unsigned int edge_count = 0, origin, desti, total_edge, total_vertices;
+void connect_vertices(int** const graph, unsigned int vertices) {
+	unsigned int edge_count = 0, origin, desti, total_edge;
 	unsigned short run = TRUE, flag = TRUE;
-	total_vertices = rows*rows;
-	total_edge = (total_vertices*(total_vertices-1))/2;
+
+	total_edge = (vertices*(vertices-1))/2;
 	while(run && (edge_count < total_edge)) {
 		printf("Enter the two vertices between 1 and %u that you want to connect.\n"
-				,rows);
-		scanf("%u%u", &origin, &desti);
-		if((origin > 0 && origin <= rows) && (desti > 0 && desti <= rows)) {
+				,vertices);
+		scanf("%u %u", &origin, &desti);
+		if((origin > 0 && origin <= vertices) && (desti > 0 && desti <= vertices)) {
 			graph[origin-1][desti-1] = 1;
 			graph[desti-1][origin-1] = 1;
+			++edge_count;
 			flag = TRUE;
+			printf("Vertices(%d, %d) and (%d, %d) both are connected successfully.\n"
+				   ,origin, desti, desti, origin);
 		}
 		else {
 			printf("Invalid vertices (%u, %u)\n", origin, desti);
@@ -74,17 +77,20 @@ void connect_vertices(int** const graph, unsigned int rows) {
 }
 
 int** create_graph(void) {
-	unsigned int rows;
+	unsigned int vertices;
 	int** graph = NULL;
 
-	printf("Enter your graph grid total number of rows.\n");
-	scanf("%u", &rows);
-	if(rows == 0 || rows == 1)
-		printf("Rows: %u invalid input.", rows);
+	printf("Enter how many vertices to create.\n");
+	scanf("%u", &vertices);
+	if(vertices == 0 || vertices == 1)
+		printf("please enter vertices input grater than 1.");
 	else
-		graph = make_grid(rows, sizeof(int));
+		graph = make_grid(vertices, sizeof(int));
 	if(graph != NULL)
-		connect_vertices(graph, rows);
+		connect_vertices(graph, vertices);
+
+	print_graph(graph, vertices);
+
 	return graph;
 }
 
@@ -92,8 +98,6 @@ int main() {
 	int** graph = NULL;
 
 	graph = create_graph();
-
-	print_graph(graph, 4, 4);
 
 	getch();
 	return 0;
