@@ -33,7 +33,7 @@ void zag_rotation(splay_node** root) {
 	splay_node* temp = (*root)->right;
 	(*root)->right = temp->left;
 	temp->left = *root;
-    *root = temp;
+    	*root = temp;
 }
 
 void insert_splay_node(splay_node** root, int data) {
