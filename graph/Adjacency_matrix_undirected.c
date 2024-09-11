@@ -77,7 +77,7 @@ void connect_vertices(int** const graph, unsigned int vertices) {
 }
 
 void free_graph_memory(int** graph, unsigned int vertices) {
-	int i;
+	unsigned int i;
 	for(i = 0; i < vertices; ++i)
 		free(graph[i]);
 	free(graph);
