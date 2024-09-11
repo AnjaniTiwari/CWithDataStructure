@@ -55,16 +55,15 @@ void insert_splay_node(splay_node** root, int data) {
 
 void inorder_predecessor(splay_node** root, int* data) {
 	if(!(*root)->right) {
-        splay_node* temp = NULL;
+        	splay_node* temp = NULL;
 		*data = (*root)->data;
-		if((*root)->left != NULL) {
+		if((*root)->left != NULL) 
 			temp = (*root)->left;
-		}
 		free(*root);
 		*root = temp;
 	}
 	else
-    	inorder_predecessor(&(*root)->right, data);
+    		inorder_predecessor(&(*root)->right, data);
 }
 
 void inorder_successor(splay_node** root, int* data) {
@@ -102,14 +101,14 @@ void delete_bottom_up_splay_node(splay_node** root, int data) {
 			free(*root);
 			*root = NULL;
 		}
-    }
+    	}
 }
 
 void delete_bottom_up(splay_node** root, int data) {
 	if((*root) != NULL)
 		delete_bottom_up_splay_node(root, data);
 	else
-        printf("Empty tree.\n");
+        	printf("Empty tree.\n");
 }
 
 
@@ -123,7 +122,7 @@ void make_root_node(splay_node** root, int data) {
 			else {
 				make_root_node(&(*root)->right, data);
 				zag_rotation(root);
-            }
+            		}
 		}
 	}
 }
@@ -137,7 +136,7 @@ void make_predecssor_root(splay_node** root) {
 
 void detach_and_join_subtree(splay_node** root) {
 	if((*root)->left != NULL) {
-    	splay_node* left_tree = NULL;
+    		splay_node* left_tree = NULL;
 		make_predecssor_root(&(*root)->left);
 		left_tree = (*root)->left;
 		(*root)->left = NULL;
@@ -150,7 +149,7 @@ void detach_and_join_subtree(splay_node** root) {
 		splay_node* right_tree = (*root)->right;
 		(*root)->right = NULL;
 		free(*root);
-        *root = right_tree;
+        	*root = right_tree;
 	}
 }
 
@@ -158,7 +157,7 @@ void delete_top_down(splay_node** root, int data) {
 	if((*root) != NULL) {
 		make_root_node(root, data);
 		detach_and_join_subtree(root);
-    }
+    	}
 	else
 		printf("Empty tree.\n");
 }
