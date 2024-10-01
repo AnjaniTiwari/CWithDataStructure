@@ -141,9 +141,9 @@ void add_vertex(vertex** list) {
 void show_graph(vertex* list) {
 	unsigned short i;
 	while(list) {
-		printf("Vertex: %4d Edges:", list->data);
+		printf("Vertex: %4d Edges: ", list->data);
 		for(i = 0; i < list->edge_count; ++i) {
-			printf(" %4d", list->edge_arr[i]->data);
+			printf("%d", list->edge_arr[i]->data);
 		}
 		printf("\n");
         list = list->next_vertex;
@@ -176,12 +176,129 @@ void add_edge(vertex** list) {
 	}
 }
 
+void free_vertex(vertex* vertex_ptr) {
+	if(vertex_ptr->edge_arr != NULL)
+		free(vertex_ptr->edge_arr);
+	if(vertex_ptr != NULL)
+		free(vertex_ptr);
+}
+
+int remove_edge(vertex** ptr, int edge_data) {
+	int i, j;
+	for(i = 0; i < (*ptr)->edge_count; ++i) {
+		if((*ptr)->edge_arr[i]->data == edge_data) {
+			for(j = i; j < (*ptr)->edge_count; ++j)
+				(*ptr)->edge_arr[j] = (*ptr)->edge_arr[j+1];
+			--(*ptr)->edge_count;
+			(*ptr)->edge_arr = (vertex**)realloc((*ptr)->edge_arr, sizeof(vertex*)*(*ptr)->edge_count);
+			return 1;
+        }
+	}
+	return 0;
+}
+
+void get_off_list(vertex** list, vertex* select_vertex) {
+	vertex* pre_vertex = NULL;
+	vertex* cur_vertex = *list;
+	do{
+		if(cur_vertex->next_vertex != NULL &&
+		   cur_vertex->next_vertex->data == select_vertex->data) {
+			pre_vertex = cur_vertex;
+		}
+
+		if(cur_vertex->data != select_vertex->data)
+			remove_edge(&cur_vertex, select_vertex->data);
+
+		cur_vertex = cur_vertex->next_vertex;
+	}while(cur_vertex != NULL);
+	if(pre_vertex != NULL)
+		pre_vertex->next_vertex = select_vertex->next_vertex;
+	else
+		*list = select_vertex->next_vertex;
+	printf("%d vertex is successfully deleted.\n", select_vertex->data);
+	free_vertex(select_vertex);
+}
+
+void delete_vertex(vertex** list) {
+	int vertex_data;
+	unsigned short run = TRUE;
+	vertex* select_vertex = NULL;
+	if(*list ==   NULL) {
+		printf("Graph is empty.\n");
+	}
+	else {
+		while(run) {
+			show_graph(*list);
+			printf("Enter the vertex you want to delete.\n");
+			scanf("%d", &vertex_data);
+			select_vertex = get_vertex(*list, vertex_data);
+			if(select_vertex != NULL) {
+				get_off_list(list, select_vertex);
+				printf("Enter 1 to continue or 0 to exit.");
+            }
+			else {
+				printf("%d invalid vertex not find in graph.\n");
+				printf("try again press 1 or press exit 0.\n");
+			}
+			scanf("%d", &run);
+		}
+	}
+}
+
 void show_menu(void) {
 	printf("\n1.Add vertex.\n");
 	printf("2.Add edge.\n");
 	printf("3.Delete vertex.\n");
-	printf("4.Show graph.\n");
-	printf("5.Exit.\n");
+	printf("4.Delete edge.\n");
+	printf("5.Show graph.\n");
+	printf("6.Exit.\n");
+}
+
+void free_list(vertex** list) {
+    vertex* next = NULL;
+	do {
+		next = (*list)->next_vertex;
+		if((*list)->edge_arr != NULL)
+			free((*list)->edge_arr);
+		free(*list);
+		*list = next;
+	}while(*list != NULL);
+
+}
+
+void delete_edge(vertex** list)  {
+	int vertex_data, edge;
+	unsigned short run = TRUE;
+	vertex* select_vertex = NULL;
+	if(*list ==   NULL) {
+		printf("Graph is empty.\n");
+	}
+	else {
+		while(run) {
+			show_graph(*list);
+			printf("Enter the vertex you want to delete the edge.\n");
+			scanf("%d", &vertex_data);
+			select_vertex = get_vertex(*list, vertex_data);
+			if(select_vertex != NULL) {
+				if(select_vertex->edge_arr != NULL) {
+					printf("Enter which edge you want to delete.\n");
+					scanf("%d", &edge);
+					if(remove_edge(&select_vertex, edge) == TRUE)
+						printf("%d edge is successfully deleted.\n", edge);
+					else
+					   printf("%d is not a edge.\n", edge);
+				}
+				else
+                	printf("%d vertex not have any edge.\n", select_vertex->data);
+				printf("Enter 1 to continue or 0 to exit.");
+            }
+			else {
+				printf("%d invalid vertex not find in graph.\n");
+				printf("try again press 1 or press exit 0.\n");
+			}
+			scanf("%d", &run);
+		}
+	}
 }
 
 int main() {
@@ -198,17 +315,19 @@ int main() {
 					break;
 			case 2:	add_edge(&list);
 					break;
-			case 3:
+			case 3: delete_vertex(&list);
 					break;
-			case 4: show_graph(list);
+			case 4: delete_edge(&list);
+                	break;
+			case 5: show_graph(list);
 					break;
-			case 5: run = FALSE;
+			case 6: run = FALSE;
 					break;
 			default:
 					printf("%d invaild choice.\n", choice);
 		}
-
 	}
+	if(list != NULL)
+    	free_list(&list);
 	return 0;
-
 }
