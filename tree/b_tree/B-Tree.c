@@ -199,7 +199,7 @@ void balanceLeft(btNode** root, int i) {
 				(*root)->vArray[i-1]->right = temp;
 				heightUpdate((*root)->vArray[i-1], 2);
 				subMiddleLR(&(*root)->vArray[i-1]->middleLR, 2);
-                shrinkNodeArray(&(*root)->vArray, --(*root)->vIndex);
+                		shrinkNodeArray(&(*root)->vArray, --(*root)->vIndex);
 			}
 		}
 	}
@@ -333,7 +333,7 @@ void balanceRight(btNode** root, int i) {
 				addMiddleLR(&temp->vArray[temp->vIndex]->middleLR, 1);
 				subMiddleLR(&temp->vArray[temp->vIndex]->middleLR, 2);
 				shiftLeft(root, i);
-                shrinkNodeArray(&(*root)->vArray, --(*root)->vIndex);
+               			shrinkNodeArray(&(*root)->vArray, --(*root)->vIndex);
 				(*root)->vArray[i]->left = temp;
 				heightUpdate((*root)->vArray[i], 1);
 				subMiddleLR(&(*root)->vArray[i]->middleLR, 1);
@@ -354,7 +354,7 @@ void balanceRight(btNode** root, int i) {
 				heightUpdate((*root)->vArray[i], 2);
 			}
 			else {
-            	temp = (*root)->vArray[i]->left;
+            			temp = (*root)->vArray[i]->left;
 				(*root)->vArray[i]->left = NULL;
 				(*root)->vArray[i]->lHeight = 0;
 				resetMiddleLR(&(*root)->vArray[i]->middleLR);
@@ -421,7 +421,7 @@ void findMaxNode(btNode** root, int* data) {
 			(*root)->vArray[(*root)->vIndex]->rHeight = 0;
 			balanceRight(root, (*root)->vIndex);
 		}
-    }
+    	}
 }
 
 void findMinNode(btNode** root, int* data) {
@@ -646,7 +646,7 @@ void insertNode(btNode** root, int data) {
 		for(i = 0; i <= (*root)->vIndex; i++) {
 			if(data < (*root)->vArray[i]->data) {
 				insertNode(&(*root)->vArray[i]->left, data);
-                updateHeight(root, i);
+                		updateHeight(root, i);
 				break;
 			}
 		}
