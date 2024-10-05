@@ -8,7 +8,7 @@ typedef struct vertex vertex;
 struct vertex {
 	int data;
 	vertex** edge_arr;
-	unsigned short edge_count;
+	unsigned int edge_count;
 	vertex* next_vertex;
 };
 
@@ -18,8 +18,10 @@ typedef struct {
 }visited;
 
 typedef struct {
-	vertex* arr;
-	unsigned int size;
+	vertex** arr;
+	int size;
+	int rear;
+	int front;
 }queue;
 
 visited visit_var;
@@ -37,7 +39,7 @@ vertex* get_vertex(vertex* list, unsigned short vertex_data) {
 }
 
 unsigned short is_edge_not_exist(int vertex_data, vertex* new_vertex) {
-	int i;
+	unsigned int i;
 	if(new_vertex->edge_arr != NULL)
 		for(i = 0; i < new_vertex->edge_count; ++i)
 			if(vertex_data == new_vertex->edge_arr[i]->data)
@@ -158,7 +160,7 @@ void add_vertex(vertex** list) {
 }
 
 void show_graph(vertex* list) {
-	unsigned short i;
+	unsigned int i;
 	while(list) {
 		printf("Vertex: %2d Edges: ", list->data);
 		for(i = 0; i < list->edge_count; ++i) {
@@ -203,7 +205,7 @@ void free_vertex(vertex* vertex_ptr) {
 }
 
 int remove_edge(vertex** ptr, int edge_data) {
-	int i, j;
+	unsigned int i, j;
 	for(i = 0; i < (*ptr)->edge_count; ++i) {
 		if((*ptr)->edge_arr[i]->data == edge_data) {
 			for(j = i; j < (*ptr)->edge_count; ++j)
@@ -335,7 +337,7 @@ short visit(int data) {
 }
 
 void depth_first_search(vertex* start) {
-	unsigned short i;
+	unsigned int i;
 	for(i = 0; i < start->edge_count; ++i) {
 		if(visit(start->edge_arr[i]->data))
 			depth_first_search(start->edge_arr[i]);
@@ -379,7 +381,25 @@ void dfs_vertex_input(vertex* list)  {
 
 
 void breadth_first_search(vertex* start_vertex) {
-	if(vertex_queue.arr == NULL || )
+	unsigned int size, i;
+	if(vertex_queue.arr == NULL || vertex_queue.rear == vertex_queue.size-1) {
+		size = vertex_queue.size == 0 ? 10 : vertex_queue.size*2;
+		vertex_queue.arr = (vertex**)realloc(vertex_queue.arr,
+											sizeof(vertex*) * size);
+		if(!vertex_queue.arr) {
+			printf("vertex queue size %d memory allocation failed.\n", size);
+			return;
+		}
+		vertex_queue.size = size;
+	}
+	for(i = 0; i < start_vertex->edge_count; ++i) {
+		if(visit(start_vertex->edge_arr[i]->data)) {
+			vertex_queue.arr[++vertex_queue.rear] = start_vertex->edge_arr[i];
+		}
+	}
+	while(vertex_queue.front != vertex_queue.rear) {
+		breadth_first_search(vertex_queue.arr[++vertex_queue.front]);
+	}
 }
 
 void bfs_vertex_input(vertex* list)  {
@@ -398,7 +418,9 @@ void bfs_vertex_input(vertex* list)  {
 			start_vertex = get_vertex(list, vertex_data);
 			if(start_vertex != NULL) {
 			   printf("Breadth first search output.\n");
-			   breath_first_search(start_vertex);
+			   visit(start_vertex->data);
+			   vertex_queue.rear = vertex_queue.front = -1;
+			   breadth_first_search(start_vertex);
 			   printf("\nEnter 1 to continue or 0 to exit.\n");
 			}
 			else {
@@ -412,6 +434,12 @@ void bfs_vertex_input(vertex* list)  {
 			}
 			visit_var.size = 0;
 			index = 0;
+
+			if(vertex_queue.arr != NULL) {
+				free(vertex_queue.arr);
+				vertex_queue.arr = NULL;
+			}
+			vertex_queue.size = 0;
 		}
 	}
 }
@@ -423,7 +451,7 @@ void show_menu(void) {
 	printf("4.Delete edge.\n");
 	printf("5.Show graph.\n");
 	printf("6.Depth first search.\n");
-	printf("7.Depth first search.\n");
+	printf("7.Breadth first search.\n");
 	printf("8.Exit.\n");
 }
 
